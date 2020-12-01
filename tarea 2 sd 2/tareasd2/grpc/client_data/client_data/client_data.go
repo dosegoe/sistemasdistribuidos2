@@ -18,11 +18,8 @@ type Server struct{
 	OtherDataNodeA data_data.DataDataClient
 	OtherDataNodeB data_data.DataDataClient
 	FriendIdA int64
-	FriendIpA string
 	FriendIdB int64
-	FriendIpB string
 	NodeId int64
-	NodeIp string
 	Status int64
 	NameNode data_name.DataNameClient
 	Mode string //excluido o centralizado
