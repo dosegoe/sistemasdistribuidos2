@@ -334,7 +334,7 @@ func main(){
 		case "2":
 			//descargar archivo
 
-			f, err5 := os.Open("./file.txt")
+			f, err5 := os.Open("namenode/log.txt")
 			errCheck(err5)
 			s := bufio.NewScanner(f)
 			//lee primero una vez para obtener el título y el número de partes

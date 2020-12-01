@@ -58,6 +58,7 @@ func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderSe
 		
 		if strings.Compare(nombre, fileName) == 0{
 			for i := 0; i < partes; i++ {
+				var n int64
 				s.Scan()
 				fmt.Println(s.Text())
 				muchotexto := s.Text()
@@ -67,8 +68,19 @@ func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderSe
 				chunk := strings.Split(separados[0], "_")
 				var chuId int64
 				chuId, err1 := strconv.ParseInt(chunk[2], 10, 64)
-				n, err1 := strconv.ParseInt(separados[1], 10, 64)
+				//n, err1 := strconv.ParseInt(separados[1], 10, 64)
 				errCheck(err1)
+
+				fileNodos, err := os.Open("namenode/Dnodes.txt")
+				errCheck(err)
+				scanNodos := bufio.NewScanner(fileNodos)
+				scanNodos.Scan()
+				linea_idip := scanNodos.Text()
+				id_ip := strings.Split(linea_idip, " ")
+				if id_ip[1] == separados[1]{
+					n , err = strconv.ParseInt(id_ip[0],10,64)
+					errCheck(err)
+				}
 				if err := stream.Send(&OrderRes{ChunkId: chuId, NodeId: n}); err != nil {
 					return err
 				}

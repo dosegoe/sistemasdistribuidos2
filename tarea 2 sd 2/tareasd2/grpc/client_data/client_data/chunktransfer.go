@@ -250,11 +250,11 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 		//En cada iteración de este ciclo se envía los datos de un chunk
 		for i,no_chunks:=range nodeidsorders{
 			fmt.Printf("iteracion n°: %d, en el nodo: %d \n", i, no_chunks)
-			if no_chunks == server.FriendIdA{
-				stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_OrderData{
-					OrderData: &data_name.OrderData{ ChunkId: int64(i), NodeId: int64(no_chunks),},
-				},})
-			}
+			//if no_chunks == server.FriendIdA{
+			stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_OrderData{
+				OrderData: &data_name.OrderData{ ChunkId: int64(i), NodeId: int64(no_chunks),},
+			},})
+			//}
 		}
 			*(server.Messages)=*(server.Messages)+1
 

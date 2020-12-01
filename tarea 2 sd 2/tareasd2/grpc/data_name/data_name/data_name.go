@@ -68,22 +68,25 @@ func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
 
 func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 	fmt.Println("Inform Order")
-	file, err := os.OpenFile("namenode/log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)  
+	file, err := os.OpenFile("namenode/log.txt", os.O_RDWR|os.O_CREATE, 0666)  
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 	w := bufio.NewWriter(file)
 	rand.Seed(time.Now().UnixNano())
-	fmt.Println("receiving order request")
+	fmt.Println("Receiving Order Request (Inform Order)")
 	var fileName string
 	parte := 0
 	*(Server.BookNum)=*(Server.BookNum)+1
 	for {
+		//Recibe archivo desde chunk transfer filename o chunk_id+node_id
 		ordReq, err := stream.Recv()
+
+		//Se acabo el stream
 		if err == io.EOF {
 			w.Flush()
-			fmt.Print("sending response (inform order): \n")
+			fmt.Print("Sending Response (inform order): \n")
 			*(Server.Messages)=*(Server.Messages)+1
 			return stream.SendAndClose(&OrderRes{
 				ResCode: OrderResCode_Yes,
@@ -95,9 +98,9 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 		//fmt.Printf("type: %T\n",upreq.Data)
 		switch ordReq.Req.(type) {
 		case *OrderReq_OrderData:
-			fmt.Print("received request: ")
+			fmt.Print("Received Request (ChunkID): ")
 			fmt.Print(ordReq.Req.(*OrderReq_OrderData).OrderData.ChunkId)
-			fmt.Print(" in node: ")
+			fmt.Print(" In Node: ")
 			fmt.Println(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId)
 			/*
 				TODO: ESCRIBIR EN EL LOG
@@ -123,6 +126,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 				separados := strings.Split(muchotexto, " ")
 				//separados[0]-> id; separados[1]-> ip
 				fmt.Println(separados)
+				fmt.Printf("separados[0] es %s", separados[0])
 				id, errata := strconv.ParseInt(separados[0], 10, 64)
 				if errata!=nil{
 					log.Fatal(errata)
@@ -145,7 +149,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 			  */
 		case *OrderReq_FileName:
 			fileName = ordReq.Req.(*OrderReq_FileName).FileName
-			fmt.Println("receiving file of name: " + fileName)
+			fmt.Println("Receiving file of name in inform order: " + fileName)
 			_, err1 := w.WriteString(fileName + "\n")
   			if err1 != nil {
     			log.Fatal(err1)
