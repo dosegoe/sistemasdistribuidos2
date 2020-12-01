@@ -149,92 +149,140 @@ func RequestChunksOrders(cnn client_name.ClientNameClient, fileName string) ([]c
 		orderchunks=append(orderchunks,order)
 	}
 
-
-
 	return orderchunks,nil
 }
+
+
+
 func errCheck(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
-func DownloadFileFromDataNodes(
-	cdn1 client_data.ClientDataClient,
-	cdn2 client_data.ClientDataClient,
-	cdn3 client_data.ClientDataClient,
-	cnn client_name.ClientNameClient, fileName string) error {
-
-	//actualmente solo manda a un solo nodo
-	//TODO: pedirle al namenode el verdadero orden!!!
-	/* algo así como:
-		orderchunks, err:=RequestChunksOrders(cnn,fileName)
-		if err!=nil{
-			return nil
-		}
-
-		for i,order:=range orderchunks {
-			bla bla bla...
-		}
-	*/
 
 
-	fmt.Println("invoking stream")
-	stream, err:=cdn1.DownloadFile(context.Background())//esto funciona solo si los 3 datanodes comparten los chunks
-	fmt.Println("creating filename")
+func RequestChunksContents(reqs []*client_data.DownloadReq, cdn client_data.ClientDataClient, fileName string) ([]*client_data.Chunk ,error){
+	chunks:=[]*client_data.Chunk{}
+	//fmt.Println("invoking stream")
+	fmt.Println("requesting orders")
+	stream, err:=cdn.DownloadFile(context.Background())
+	
+	//fmt.Println("creating filename")
 	DonwnloadFileName:=&client_data.DownloadReq{
 		Req: &client_data.DownloadReq_FileName{
 			FileName: fileName,
 		},
 	}
 	if err!=nil{
-		return err
+		return nil,err
 	}
-	fmt.Println("sending filename")
+	//fmt.Println("sending filename")
 	if err:=stream.Send(DonwnloadFileName); err!=nil{
-		return nil
+		return nil,err
 	}
 
-	chunksData:=[][]byte{}
-	chunks:=[]client_data.Chunk{}
-	//TODO: pedirle el verdadero orden al namenode
-	for i:=0;i<=7;i++{
-		fmt.Printf("requesting chunk of id: %d \n",i)
-		chunkReq:=&client_data.DownloadReq{
-			Req: &client_data.DownloadReq_ChunkId{
-				ChunkId: int64(i),
-			},
-		}
-		fmt.Println("sending request")
-		if err:=stream.Send(chunkReq); err!=nil{
-			return nil
+	for _,req:=range reqs{
+		fmt.Println("requesting chunk of id: ",req.Req)
+		if err:=stream.Send(req); err!=nil{
+			return nil,err
 		}
 		fmt.Println("sended, receiving response")
 		downloadRes,err:=stream.Recv()
 		if err!=nil{
+			return nil,err
+		}
+		fmt.Print("received chunk of id: ",downloadRes.ChunkId)
+		chunks=append(chunks,downloadRes)
+	}
+
+	return chunks,nil
+}
+
+//descarga archivo
+func DownloadFileFromDataNodes(
+	cdn1 client_data.ClientDataClient,
+	cdn2 client_data.ClientDataClient,
+	cdn3 client_data.ClientDataClient,
+	cnn client_name.ClientNameClient, fileName string) error {
+
+		fmt.Println("attempting to download chunks")
+
+		orderchunks, err:=RequestChunksOrders(cnn,fileName)
+		if err!=nil{
+			return nil
+		}
+	
+		ordersDN1:=[]*client_data.DownloadReq{}
+		ordersDN2:=[]*client_data.DownloadReq{}
+		ordersDN3:=[]*client_data.DownloadReq{}
+	
+		allChunks:=[]*client_data.Chunk{}
+		
+		//separar los requests que haremos por datanode
+		for _,order:=range orderchunks{
+			switch(order.NodeId){
+			case int64(1):
+				ordersDN1=append(ordersDN1,&client_data.DownloadReq{
+					Req: &client_data.DownloadReq_ChunkId{
+						ChunkId: order.ChunkId,
+					},
+				})
+			case int64(2):
+				ordersDN2=append(ordersDN2,&client_data.DownloadReq{
+					Req: &client_data.DownloadReq_ChunkId{
+						ChunkId: order.ChunkId,
+					},
+				})
+			case int64(3):
+				ordersDN3=append(ordersDN3,&client_data.DownloadReq{
+					Req: &client_data.DownloadReq_ChunkId{
+						ChunkId: order.ChunkId,
+					},
+				})
+			}
+				//bla bla bla...
+		}
+		//pedir chunks correspondientes a DN1
+		chunks1,err:=RequestChunksContents(ordersDN1,cdn1,fileName)
+		if err!=nil{
 			return err
 		}
-		fmt.Println("response receiving, adding to chunks slice")
-		chunks=append(chunks,*downloadRes)	
-	}
-	//ordenar los chunks por id
-	fmt.Println("all chunks received, ordering by id")
-	sort.Slice(chunks, func(i, j int) bool {
-		return chunks[i].ChunkId < chunks[j].ChunkId
-	})
-	fmt.Println("chunks:")
-	for _,chunk:=range chunks{
-		fmt.Println(chunk.ChunkId)
-		chunksData=append(chunksData,chunk.Content)
-	}
+		allChunks=append(allChunks,chunks1...)
+		//pedir chunks correspondientes a DN2
+		chunks2,err:=RequestChunksContents(ordersDN2,cdn2,fileName)
+		if err!=nil{
+			return err
+		}
+		allChunks=append(allChunks,chunks2...)
+		//pedir chunks correspondientes a DN3
+		chunks3,err:=RequestChunksContents(ordersDN3,cdn3,fileName)
+		if err!=nil{
+			return err
+		}
+		allChunks=append(allChunks,chunks3...)
+		
+		//ordenar los chunks por id
+		fmt.Println("all chunks received, ordering by id")
+		sort.Slice(allChunks, func(i, j int) bool {
+			return allChunks[i].ChunkId < allChunks[j].ChunkId
+		})
+	
+		chunksData:=[][]byte{}
+		fmt.Println("chunks:")
+		for _,chunk:=range allChunks{
+			fmt.Println(chunk.ChunkId)
+			chunksData=append(chunksData,chunk.Content)
+		}
+	
+		fmt.Println("merging bytes to file")
+		err=transform.ChunksToFile(chunksData,fileName,downloadPath)
+		if err!=nil{
+			return err
+		}
+		
+		fmt.Println("done! :)")
+		return nil
 
-	fmt.Println("merging bytes to file")
-	err=transform.ChunksToFile(chunksData,fileName,downloadPath)
-	if err!=nil{
-		return err
-	}
-
-	fmt.Println("done! :)")
-	return nil
 }
 
 var(

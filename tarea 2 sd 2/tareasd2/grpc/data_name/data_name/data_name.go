@@ -64,7 +64,7 @@ func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
 
 func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 	fmt.Println("Inform Order")
-	file, err := os.OpenFile("./file.txt", os.O_RDWR|os.O_CREATE, 0666)  
+	file, err := os.OpenFile("namenode/log.txt", os.O_RDWR|os.O_CREATE/*|os.O_APPEND|*/, 0666)  
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 
 			*/
 			s := strconv.Itoa(parte)
-			f, err5 := os.Open("./Dnodes.txt")
+			f, err5 := os.Open("namenode/Dnodes.txt")
 			if err5 != nil{
 				log.Fatal(err5)
 			}

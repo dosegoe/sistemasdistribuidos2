@@ -41,8 +41,6 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 			fmt.Println("sending chunks to friends")
 
 			err=server.SendChunksToOtherDataNodes(totalChunks, fileName)//ver archivo "chunktransfer"".go, en este mismo paquete
-			
-			
 
 			if err!=nil{
 				fmt.Println("error")
@@ -52,8 +50,6 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 				})
 			}
 			
-
-
 			//server.printTotalChunks()
 			return stream.SendAndClose(&UploadRes{
 				ResCode:UploadResCode_Ok,
@@ -129,8 +125,8 @@ func (server *Server) DownloadFile(stream ClientData_DownloadFileServer) error{
 }
 
 func (server *Server) getFileChunk(fileName string,chunkId int64) ([]byte, error){
-	filePath:=server.FileChunksPath+"/"+fileName+"_chunk_"+strconv.Itoa(int(chunkId))
-	fmt.Println("opening chunkn path: "+filePath)
+	filePath:=server.FileChunksPath+"/"+fileName+"_chunk_"+strconv.Itoa(int(chunkId)-1)
+	fmt.Println("opening chunk path: "+filePath)
 
 	err:=os.Chmod(filePath,0777)
 	if err!=nil{

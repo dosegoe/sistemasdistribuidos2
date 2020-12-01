@@ -33,7 +33,7 @@ func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderSe
 	//como el título está seguido de la cantidad de partes puedo abrir un for que 
 	//itere la cantidad de veces necesarias para poder obtener todas las partes y
 	//por cada iteración enviar un OrderRes de respuesta.
-	f, err5 := os.Open("tareasd2/file.txt")
+	f, err5 := os.Open("namenode/log.txt")
     errCheck(err5)
     defer func() {
     	f.Close()
@@ -79,19 +79,6 @@ func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderSe
 		}
 	}	
 
-
-	/*
-	orders:=[]OrderRes{}
-	... buscar el orden de chunks del archivo filename en el log y almacenarlo en orders...
-	recordar que OrderRes tiene dos variables ChunkId (int64) y NodeId(int64)
-
-
-	for _,order:=range orders{
-		stream.Send(&order)
-	}
-
-	*/
-	
 	return nil
 }
 
