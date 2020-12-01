@@ -1,0 +1,25 @@
+/*
+desde el directorio "grpc", ejecutar el comando:
+protoc --go_out=plugins=grpc:client_name client_name/client_name.proto
+*/
+syntax = "proto3";
+
+package client_name;
+
+service ClientName{
+    /*
+    NO IMPLEMENTADO AÚN
+    Cliente le envía un "OrderReq" al NameNode, el cual contiene eel nombre de un archivo
+    DataNode le envía una secuencua de OrderRes, cada uno conteniendo el id de un chunk y cual es el DataNode que lo contiene
+    */
+    rpc ChunksOrder(OrderReq) returns (stream OrderRes){};
+}
+
+message OrderReq{
+    string filename=1;
+}
+
+message OrderRes{
+    int64 ChunkId=1;
+    int64 NodeId=2;
+}

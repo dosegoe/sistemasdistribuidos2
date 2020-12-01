@@ -1,0 +1,24 @@
+Cacurri 8
+parte_1_1 192.168.1.82
+parte_1_2 192.168.1.82
+parte_1_3 192.168.1.82
+parte_1_4 192.168.1.82
+parte_1_5 192.168.1.82
+parte_1_6 192.168.1.82
+parte_1_7 192.168.1.82
+parte_1_2 192.168.1.82
+Dracula-Stoker_Bram 7
+parte_1_1 192.168.1.82
+parte_1_2 192.168.1.82
+parte_1_3 192.168.1.82
+parte_1_4 192.168.1.82
+parte_1_5 192.168.1.82
+parte_1_6 192.168.1.82
+parte_1_7 192.168.1.82
+Desobediencia_civil-Henry_David_Thoreau 5
+parte_2_1 192.168.1.82
+parte_2_2 192.168.1.82
+parte_2_3 192.168.1.82
+parte_2_4 192.168.1.82
+parte_2_5 192.168.1.82
+

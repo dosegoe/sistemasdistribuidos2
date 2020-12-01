@@ -1,0 +1,53 @@
+/*
+desde el directorio "grpc", ejecutar el comando:
+protoc --go_out=plugins=grpc:client_data client_data/client_data.proto
+*/
+syntax = "proto3";
+
+package client_data;
+
+service ClientData{
+
+    /*
+    Cliente envía el nombre de archivo a un DataNode, seguido de una secuencia de chunks
+    Luego de que el DataNode haga "lo que tiene que hacer" (distribuír los chunks entre los datanodes), le responde con un UploadRes
+    */
+    rpc UploadFile(stream UploadReq)returns(UploadRes){};
+
+    /*
+    Cliente envía el nombre de archivo a un DataNode, seguido de los ids de los chunks que el DataNode tiene de ese archivo (según lo que le dijo el DataNode)
+    El DataNode le retorna todos los chunks que tiene almacenado
+    El Cliente debe llamar a esta función con los tres DataNode, y luego ordenarlos en su propio proceso
+    */
+    rpc DownloadFile(stream DownloadReq) returns (stream Chunk){};
+}
+
+message Chunk{
+    bytes Content=1;
+    int64 ChunkId=2;
+}
+
+message UploadReq{
+    oneof Req{
+        string FileName=1;
+        Chunk DataChunk=2;
+    }
+}
+
+message UploadRes{
+    UploadResCode ResCode=1;
+    string Message=2;
+}
+
+enum UploadResCode{
+    Unknown = 0;
+    Ok = 1;
+    Failed = 2;
+}
+
+message DownloadReq{
+    oneof Req{
+        string FileName=1;
+        int64 ChunkId=2;
+    }
+}

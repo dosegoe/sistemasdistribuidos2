@@ -1,0 +1,45 @@
+/*
+para compilar, desde el directorio "grpc", ejecutar el comando:
+protoc --go_out=plugins=grpc:data_name data_name/data_name.proto
+*/
+syntax = "proto3";
+
+package data_name;
+
+service DataName{
+    
+    //NO IMPLEMENTADO AÚN
+    //este se usa solo en caso de que el algoritmo sea de exclusion centralizada:
+    rpc RequestOrder(stream OrderReq) returns (OrderRes){}
+
+    //NO IMPLEMENTADO AÚN
+    //datanode informa al namenode cual es el orden que tiene que escribir en el log
+    rpc InformOrder(stream OrderReq) returns (OrderRes){}
+
+}
+
+message OrderReq{
+    oneof Req{
+        string FileName=1;
+        OrderData OrderData=2;
+    }
+}
+
+message OrderData{
+    int64 ChunkId=1;
+    int64 NodeId=2;
+}
+
+message OrderInfo{
+    int64 NodeId=1;
+    int64 ChunkId=2;
+}
+
+message OrderRes{
+    OrderResCode ResCode=1;
+}
+
+enum OrderResCode{
+    No=0;
+    Yes=1;
+}

@@ -1,0 +1,79 @@
+/*
+desde el directorio "grpc", ejecutar el comando:
+protoc --go_out=plugins=grpc:data_data data_data/data_data.proto
+*/
+syntax = "proto3";
+
+package data_data;
+
+service DataData{
+    
+    rpc ChunksTransfer(stream TransferReq) returns (TransferRes){}
+
+    //este se usa solo en caso de que el algoritmo sea de exclusion distribuida:
+    rpc RequestOrder(stream OrderReq) returns (OrderRes){}
+
+    rpc GetId(IdReq) returns (IdRes){}
+
+    rpc EntranceRequest(EnReq) returns (EnRes){}
+}
+
+message Chunk{
+    bytes Content=1;
+    int64 ChunkId=2;
+}
+
+message TransferReq{
+    oneof Req{
+        string FileName=1;
+        Chunk DataChunk=2;
+    }
+}
+
+message TransferRes{
+    TransferResCode ResCode=1;
+    string Message=2;
+}
+
+enum TransferResCode{
+    Unknown = 0;
+    Ok = 1;
+    Failed = 2;
+}
+
+message OrderData{
+    int64 ChunkId=1;
+    int64 NodeId=2;
+}
+
+message OrderReq{
+    oneof Req{
+        string FileName=1;
+        OrderData OrderData=2;
+    }
+}
+
+message OrderRes{
+    OrderResCode ResCode=1;
+}
+
+enum OrderResCode{
+    No=0;
+    Yes=1;
+}
+
+message IdReq{
+    string Data=1;
+}
+message IdRes{
+    int64 NodeId=1;
+}
+
+message EnReq{
+    int64 NodeId=1;
+}
+
+message EnRes{
+    int64 NodeId=1;
+    OrderResCode ResCode=2;
+}
