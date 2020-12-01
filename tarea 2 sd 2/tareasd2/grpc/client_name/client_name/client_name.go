@@ -16,15 +16,17 @@ import(
 )
 
 type Server struct{
-
+	Messages *int
 }
+
+//revisa errores
 func errCheck(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
+
 //una vez tenga almacenado ordenes en el log, namenode envía al cliente info del orden
-//que yo sepa, esta parte en sí NO requiere usar el algoritmo de ricart/agrawala
 func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderServer) error{
 	
 	fileName:=req.GetFilename()
@@ -69,7 +71,9 @@ func (server *Server) ChunksOrder(req *OrderReq, stream ClientName_ChunksOrderSe
 				errCheck(err1)
 				if err := stream.Send(&OrderRes{ChunkId: chuId, NodeId: n}); err != nil {
 					return err
-					}
+				}
+				*(server.Messages)=*(server.Messages)+1
+
 			}
 			break
 		}else{

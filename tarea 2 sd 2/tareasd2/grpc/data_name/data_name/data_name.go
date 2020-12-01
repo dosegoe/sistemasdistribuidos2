@@ -16,6 +16,7 @@ import (
 type Server struct {
 	Probability float64
 	BookNum *int
+	Messages *int
 }
 //copié el mismo código de requestorder en data_data
 func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
@@ -30,11 +31,13 @@ func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
 			r := rand.Float64()
 			if r < server.Probability {
 				fmt.Println("sipo approbing ")
+				*(server.Messages)=*(server.Messages)+1
 				return stream.SendAndClose(&OrderRes{
 					ResCode: OrderResCode_Yes,
 				})
 			} else {
 				fmt.Println("rejecting")
+				*(server.Messages)=*(server.Messages)+1
 				return stream.SendAndClose(&OrderRes{
 					ResCode: OrderResCode_No,
 				})
@@ -81,6 +84,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 		if err == io.EOF {
 			w.Flush()
 			fmt.Print("sending response (inform order): \n")
+			*(Server.Messages)=*(Server.Messages)+1
 			return stream.SendAndClose(&OrderRes{
 				ResCode: OrderResCode_Yes,
 			})

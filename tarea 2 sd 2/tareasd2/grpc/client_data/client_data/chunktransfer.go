@@ -222,14 +222,20 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 	//ALGORITMO RICART AGRAWALA (conjunción de este código con EntranceRequest e InformOrder)
 	//Primero debemos cambiar el status del Servidor a WANTED
 	server.Status = 1
+
 	//primero debo enviar los request de entrada al log a los datanode con EntranceRequest
 	resA,err := server.OtherDataNodeA.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
 	if err!=nil{
 		return err
+	} else {
+		*(server.Messages)=*(server.Messages)+1
 	}
+
 	resB,err1 := server.OtherDataNodeB.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
 	if err1!=nil{
 		return err
+	} else {
+		*(server.Messages)=*(server.Messages)+1
 	}
 	if resA.ResCode==data_data.OrderResCode_Yes && resB.ResCode==data_data.OrderResCode_Yes{
 		//Los otros nodos permitieron el acceso, se cambio el status a HELD
@@ -239,6 +245,7 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 		fmt.Println("comienzo envíos de datos en chunktransfer: \n")
 		fmt.Println("Primero se envía el nombre")
 		stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_FileName{FileName: fileName+" "+strconv.Itoa(numberOfChunks),}})
+		*(server.Messages)=*(server.Messages)+1
 		
 		//En cada iteración de este ciclo se envía los datos de un chunk
 		for i,no_chunks:=range nodeidsorders{
@@ -246,6 +253,7 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 			stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_OrderData{
 				OrderData: &data_name.OrderData{ ChunkId: int64(i), NodeId: int64(no_chunks),},
 			},})
+			*(server.Messages)=*(server.Messages)+1
 			
 		}
 
@@ -278,6 +286,7 @@ func (server *Server) CentralizedRequest(directions []*data_name.OrderReq, cli d
 		if err := stream.Send(data); err != nil {
 			return err,false
 		}
+		*(server.Messages)=*(server.Messages)+1
 	}
 	reply,err:=stream.CloseAndRecv()
 	if reply.ResCode==data_name.OrderResCode_Yes{
@@ -324,6 +333,8 @@ func (server *Server) RequestOrdersToNode(directions []*data_data.OrderReq, cli 
 		if err := stream.Send(data); err != nil {
 			return err,false
 		}
+		*(server.Messages)=*(server.Messages)+1
+
 	}
 	reply,err:=stream.CloseAndRecv()
 	if reply.ResCode==data_data.OrderResCode_Yes{

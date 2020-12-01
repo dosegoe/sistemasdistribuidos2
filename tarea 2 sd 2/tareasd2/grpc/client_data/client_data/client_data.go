@@ -28,6 +28,7 @@ type Server struct{
 	Mode string //excluido o centralizado
 	//NameNodeCli data_name.DataNameClient
 	//Mode string //(excluido o centralizado)
+	Messages *int
 }
 
 func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
@@ -44,6 +45,7 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 
 			if err!=nil{
 				fmt.Println("error")
+				*(server.Messages)=*(server.Messages)+1
 				return stream.SendAndClose(&UploadRes{
 					ResCode:UploadResCode_Failed,
 					Message:fmt.Sprintf("Failed: %v\n",err),
@@ -51,12 +53,14 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 			}
 			
 			//server.printTotalChunks()
+			*(server.Messages)=*(server.Messages)+1
 			return stream.SendAndClose(&UploadRes{
 				ResCode:UploadResCode_Ok,
 				Message:"Ok",
 			})	
 		}
 		if err!=nil{
+			*(server.Messages)=*(server.Messages)+1
 			return stream.SendAndClose(&UploadRes{
 				ResCode:UploadResCode_Failed,
 				Message:fmt.Sprintf("Failed: %v\n",err),
@@ -114,6 +118,8 @@ func (server *Server) DownloadFile(stream ClientData_DownloadFileServer) error{
 		if err!=nil{
 			return err
 		}
+
+		*(server.Messages)=*(server.Messages)+1
 		stream.Send(&Chunk{
 			Content: chunkBytes,
 			ChunkId: newChunkId,
@@ -153,6 +159,7 @@ func(server *Server) SendChunksToDataNode(chunks []*data_data.TransferReq, cli d
 	}
 	for _,chunk:=range chunks{
 		if err:=stream.Send(chunk);err!=nil{
+			*(server.Messages)=*(server.Messages)+1
 			return err
 		}
 	}

@@ -16,6 +16,7 @@ type Server struct{
 	Probability float64
 	FileChunksPath string
 	Status int64 //0-> RELEASED; 1->WANTED; 2-> HELD
+	Messages *int
 }
 
 //ojo, hay que tener en mente que estas funciones se ejecutan del lado del datanode "servidor"!!1 (por mas confuso que sea)
@@ -29,6 +30,7 @@ func(server *Server) ChunksTransfer(stream DataData_ChunksTransferServer) error{
 		if err == io.EOF{
 			fmt.Println("chunks for the file: "+fileName+" received")
 			//server.printTotalChunks()
+			*(server.Messages)=*(server.Messages)+1
 			return stream.SendAndClose(&TransferRes{
 				ResCode:TransferResCode_Ok,
 				Message:"Ok",
@@ -72,11 +74,13 @@ func(server *Server) RequestOrder(stream DataData_RequestOrderServer) error{
 			r:=rand.Float64()
 			if r<server.Probability{
 				fmt.Println("sipo approbing ")
+				*(server.Messages)=*(server.Messages)+1
 				return stream.SendAndClose(&OrderRes{
 					ResCode:OrderResCode_Yes,
 				})
 			} else {
 				fmt.Println("rejecting")
+				*(server.Messages)=*(server.Messages)+1
 				return stream.SendAndClose(&OrderRes{
 					ResCode:OrderResCode_No,
 				})
@@ -107,6 +111,7 @@ func(server *Server) RequestOrder(stream DataData_RequestOrderServer) error{
 func(server *Server)GetId(ctx context.Context, idreq *IdReq) (*IdRes, error){
 	fmt.Println("getting id request")
 	fmt.Printf("my node id is: %d\n",server.NodeId)
+	*(server.Messages)=*(server.Messages)+1
 	return &IdRes{
 		NodeId: server.NodeId,
 	},nil
@@ -121,6 +126,7 @@ func(server *Server) EntranceRequest(ctx context.Context, in *EnReq) (*EnRes, er
 		time.Sleep(130 * time.Millisecond)
 		goto sendRequest
 	}else{
+		*(server.Messages)=*(server.Messages)+1
 		return &EnRes{
 			NodeId: server.NodeId,
 			ResCode: OrderResCode_Yes,

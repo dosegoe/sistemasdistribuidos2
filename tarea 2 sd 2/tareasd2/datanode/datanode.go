@@ -79,6 +79,7 @@ func ListenToClient(IPAddr string, PortNum string) error {
 		NodeId: NodeId,
 		NameNode: NameNode,
 		Mode: Mode,
+		Messages: Messages,
 	}
 
 	transServer:=grpc.NewServer()
@@ -132,6 +133,7 @@ func ListenToDN(IPAddr string, PortNum string, NodeId int64, Probability float64
 		FileChunksPath:"datanode/files",
 		NodeId: NodeId,
 		Probability: Probability,
+		Messages: Messages,
 	}
 
 	transServer:=grpc.NewServer()
@@ -234,8 +236,11 @@ var OtherDNodeB data_data.DataDataClient
 var IdNodeB int64
 var NameNode data_name.DataNameClient
 var Mode string
+var Messages *int
 
 func main(){
+	msgs:=0
+	Messages=&msgs
 	IPAddr:=getIPAddr()
 	//log.Println(IpAddr)
 	fmt.Println("dirección IP de dataNode: ",IPAddr)
