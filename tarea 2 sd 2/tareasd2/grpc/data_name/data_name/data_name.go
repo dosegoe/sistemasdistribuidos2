@@ -15,6 +15,7 @@ import (
 
 type Server struct {
 	Probability float64
+	BookNum *int
 }
 //copié el mismo código de requestorder en data_data
 func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
@@ -64,7 +65,7 @@ func (server *Server) RequestOrder(stream DataName_RequestOrderServer) error {
 
 func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 	fmt.Println("Inform Order")
-	file, err := os.OpenFile("namenode/log.txt", os.O_RDWR|os.O_CREATE/*|os.O_APPEND|*/, 0666)  
+	file, err := os.OpenFile("namenode/log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)  
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,6 +75,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 	fmt.Println("receiving order request")
 	var fileName string
 	parte := 0
+	*(Server.BookNum)=*(Server.BookNum)+1
 	for {
 		ordReq, err := stream.Recv()
 		if err == io.EOF {
@@ -105,6 +107,9 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 				log.Fatal(err5)
 			}
 			scan := bufio.NewScanner(f)
+			
+			bookN:=strconv.Itoa(*(Server.BookNum))
+			fmt.Println("book id: "+bookN)
 			//lee primero una vez para obtener el título y el número de partes
 			for i:=0; i<3; i++{
 				scan.Scan()
@@ -119,7 +124,7 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 					log.Fatal(errata)
 				}
 				if id == ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId{
-					_, err := w.WriteString("parte_1_"+s+" "+separados[1] + "\n")
+					_, err := w.WriteString("parte_"+bookN+"_"+s+" "+separados[1] + "\n")
 					if err != nil {
 						log.Fatal(err)
 					}
