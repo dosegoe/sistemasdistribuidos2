@@ -305,6 +305,7 @@ func main(){
 			time.Sleep(200 * time.Millisecond)
 
 		case "quit":
+			fmt.Println("número de mensajes enviados por este DataNode: ",*Messages)
 			fmt.Println("adios")
 			return
 			

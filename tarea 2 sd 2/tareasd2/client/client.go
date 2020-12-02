@@ -288,11 +288,6 @@ func DownloadFileFromDataNodes(
 var(
 	downloadPath string 
 	uploadPath string
-	//cdn1 client_data.ClientDataClient
-	//cdn2 client_data.ClientDataClient
-	//cdn3 client_data.ClientDataClient
-	//cnn client_name.ClientNameClient
-	
 )
 
 
@@ -338,6 +333,7 @@ func main(){
 			errCheck(err5)
 			s := bufio.NewScanner(f)
 			//lee primero una vez para obtener el título y el número de partes
+			fmt.Println("archivos disponibles:")
 			for s.Scan(){
 				if s.Text() == ""{
 					break
@@ -355,7 +351,7 @@ func main(){
 			}
 			f.Close()
 			var fileDownload string
-			fmt.Println("Ingrese el título del archivo a descargar (incluir extensión \".pdf\"): \n")
+			fmt.Println("Ingrese el nombre del archivo a descargar (incluir extensión \".pdf\"): \n")
 			fmt.Scanln(&fileDownload)
 			err:=DownloadFileFromDataNodes(cdn1,cdn2,cdn3,cnn,fileDownload)
 			if err!=nil{
