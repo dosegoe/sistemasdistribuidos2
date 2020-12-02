@@ -221,30 +221,67 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 
 	//ALGORITMO RICART AGRAWALA (conjunción de este código con EntranceRequest e InformOrder)
 	//Primero debemos cambiar el status del Servidor a WANTED
-	server.Status = 1
+	if server.Mode=="distribuido"{
+		fmt.Printf("Se entró al modo distribuido en chunktransfer\n")
 
-	//primero debo enviar los request de entrada al log a los datanode con EntranceRequest
-	resA,err := server.OtherDataNodeA.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
-	if err!=nil{
-		return err
-	} else {
-		*(server.Messages)=*(server.Messages)+1
-	}
+		server.Status = 1
 
-	resB,err1 := server.OtherDataNodeB.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
-	if err1!=nil{
-		return err
-	} else {
-		*(server.Messages)=*(server.Messages)+1
-	}
-	if resA.ResCode==data_data.OrderResCode_Yes && resB.ResCode==data_data.OrderResCode_Yes{
-		//Los otros nodos permitieron el acceso, se cambio el status a HELD
-		//se procede a escribir en el log
-		server.Status = 2
+		//primero debo enviar los request de entrada al log a los datanode con EntranceRequest
+		resA,err := server.OtherDataNodeA.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
+		if err!=nil{
+			return err
+		} else {
+			*(server.Messages)=*(server.Messages)+1
+		}
+
+		resB,err1 := server.OtherDataNodeB.EntranceRequest(context.Background(),&data_data.EnReq{NodeId:server.NodeId})
+		if err1!=nil{
+			return err
+		} else {
+			*(server.Messages)=*(server.Messages)+1
+		}
+		if resA.ResCode==data_data.OrderResCode_Yes && resB.ResCode==data_data.OrderResCode_Yes{
+			//Los otros nodos permitieron el acceso, se cambio el status a HELD
+			//se procede a escribir en el log
+			server.Status = 2
+			stream,err:=server.NameNode.InformOrder(context.Background())
+			fmt.Println("comienzo envíos de datos en chunktransfer: \n")
+			fmt.Println("Primero se envía el nombre")
+			stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_FileName{FileName:"dist+"+fileName+" "+strconv.Itoa(numberOfChunks),}})
+			*(server.Messages)=*(server.Messages)+1
+			
+			//En cada iteración de este ciclo se envía los datos de un chunk
+			for i,no_chunks:=range nodeidsorders{
+				fmt.Printf("iteracion n°: %d, en el nodo: %d \n", i, no_chunks)
+				//if no_chunks == server.FriendIdA{
+				stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_OrderData{
+					OrderData: &data_name.OrderData{ ChunkId: int64(i), NodeId: int64(no_chunks),},
+				},})
+				//}
+			}
+				*(server.Messages)=*(server.Messages)+1
+
+			//Se obtiene una respuesta del lado del servidor
+			response, err := stream.CloseAndRecv()
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("se recibio la respuesta en chunktransfer:")
+			log.Println(response)
+			if response.ResCode==data_name.OrderResCode_Yes{
+				//como ya realizó la tarea se libera la zona critica y el recurso
+				server.Status=0
+				fmt.Println("Se libera el status del servidor\n")
+			}
+		}else{
+			log.Fatal("No se pudo acceder al registro\n")
+		}
+	}else{
+		fmt.Printf("Se entró al modo centralizado en chunktransfer\n")
 		stream,err:=server.NameNode.InformOrder(context.Background())
-		fmt.Println("comienzo envíos de datos en chunktransfer: \n")
+		fmt.Println("comienzo envíos de datos en chunktransfer modo centralizado: \n")
 		fmt.Println("Primero se envía el nombre")
-		stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_FileName{FileName: fileName+" "+strconv.Itoa(numberOfChunks),}})
+		stream.Send(&data_name.OrderReq{ Req: &data_name.OrderReq_FileName{FileName:"cent+"+fileName+" "+strconv.Itoa(numberOfChunks),}})
 		*(server.Messages)=*(server.Messages)+1
 		
 		//En cada iteración de este ciclo se envía los datos de un chunk
@@ -265,15 +302,7 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 		}
 		fmt.Println("se recibio la respuesta en chunktransfer:")
 		log.Println(response)
-		if response.ResCode==data_name.OrderResCode_Yes{
-			//como ya realizó la tarea se libera la zona critica y el recurso
-			server.Status=0
-			fmt.Println("Se libera el status del servidor\n")
-		}
-	}else{
-		log.Fatal("No se pudo acceder al registro\n")
 	}
-
 	return nil
 
 }

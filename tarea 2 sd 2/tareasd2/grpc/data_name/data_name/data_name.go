@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"reflect"
+	"sync"
 )
 
 type Server struct {
@@ -79,6 +80,8 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 	var fileName string
 	parte := 0
 	*(Server.BookNum)=*(Server.BookNum)+1
+	var modo string
+	var candado sync.Mutex
 	for {
 		//Recibe archivo desde chunk transfer filename o chunk_id+node_id
 		ordReq, err := stream.Recv()
@@ -98,48 +101,94 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 		//fmt.Printf("type: %T\n",upreq.Data)
 		switch ordReq.Req.(type) {
 		case *OrderReq_OrderData:
-			fmt.Print("Received Request (ChunkID): ")
-			fmt.Print(ordReq.Req.(*OrderReq_OrderData).OrderData.ChunkId)
-			fmt.Print(" In Node: ")
-			fmt.Println(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId)
-			/*
-				TODO: ESCRIBIR EN EL LOG
+			if modo == "dist"{
+				fmt.Print("Received Request (ChunkID): ")
+				fmt.Print(ordReq.Req.(*OrderReq_OrderData).OrderData.ChunkId)
+				fmt.Print(" In Node: ")
+				fmt.Println(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId)
+				/*
+					TODO: ESCRIBIR EN EL LOG
 
 
 
-			*/
-			s := strconv.Itoa(parte)
-			f, err5 := os.Open("namenode/Dnodes.txt")
-			if err5 != nil{
-				log.Fatal(err5)
-			}
-			scan := bufio.NewScanner(f)
-			
-			bookN:=strconv.Itoa(*(Server.BookNum))
-			fmt.Println("book id: "+bookN)
-			//lee primero una vez para obtener el título y el número de partes
-			for i:=0; i<3; i++{
-				scan.Scan()
-				fmt.Println(scan.Text())
-				muchotexto := scan.Text()
-				fmt.Println(reflect.TypeOf(muchotexto))
-				separados := strings.Split(muchotexto, " ")
-				//separados[0]-> id; separados[1]-> ip
-				fmt.Println(separados)
-				fmt.Printf("separados[0] es %s", separados[0])
-				id, errata := strconv.ParseInt(separados[0], 10, 64)
-				if errata!=nil{
-					log.Fatal(errata)
+				*/
+				s := strconv.Itoa(parte)
+				f, err5 := os.Open("namenode/Dnodes.txt")
+				if err5 != nil{
+					log.Fatal(err5)
 				}
-				if id == ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId{
-					_, err := w.WriteString("parte_"+bookN+"_"+s+" "+separados[1] + "\n")
-					if err != nil {
-						log.Fatal(err)
+				scan := bufio.NewScanner(f)
+				
+				bookN:=strconv.Itoa(*(Server.BookNum))
+				fmt.Println("book id: "+bookN)
+				//lee primero una vez para obtener el título y el número de partes
+				for i:=0; i<3; i++{
+					scan.Scan()
+					fmt.Println(scan.Text())
+					muchotexto := scan.Text()
+					fmt.Println(reflect.TypeOf(muchotexto))
+					separados := strings.Split(muchotexto, " ")
+					//separados[0]-> id; separados[1]-> ip
+					fmt.Println(separados)
+					fmt.Printf("separados[0] es %s", separados[0])
+					id, errata := strconv.ParseInt(separados[0], 10, 64)
+					if errata!=nil{
+						log.Fatal(errata)
 					}
-					f.Close()
-					break
+					if id == ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId{
+						_, err := w.WriteString("parte_"+bookN+"_"+s+" "+separados[1] + "\n")
+						if err != nil {
+							log.Fatal(err)
+						}
+						f.Close()
+						break
+					}
 				}
-			} 
+			}else{
+				fmt.Print("ORDER DATA CENTRALIZADO: ")
+				fmt.Print("Received Request (ChunkID): ")
+				fmt.Print(ordReq.Req.(*OrderReq_OrderData).OrderData.ChunkId)
+				fmt.Print(" In Node: ")
+				fmt.Println(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId)
+				/*
+					TODO: ESCRIBIR EN EL LOG
+				*/
+				s := strconv.Itoa(parte)
+				candado.Lock()
+				f, err5 := os.Open("namenode/Dnodes.txt")
+				if err5 != nil{
+					log.Fatal(err5)
+				}
+				scan := bufio.NewScanner(f)
+				
+				bookN:=strconv.Itoa(*(Server.BookNum))
+				fmt.Println("book id: "+bookN)
+				//lee primero una vez para obtener el título y el número de partes
+				for i:=0; i<3; i++{
+					scan.Scan()
+					fmt.Println(scan.Text())
+					muchotexto := scan.Text()
+					fmt.Println(reflect.TypeOf(muchotexto))
+					separados := strings.Split(muchotexto, " ")
+					//separados[0]-> id; separados[1]-> ip
+					fmt.Println(separados)
+					fmt.Printf("separados[0] es %s", separados[0])
+					id, errata := strconv.ParseInt(separados[0], 10, 64)
+					if errata!=nil{
+						log.Fatal(errata)
+					}
+					if id == ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId{
+						_, err := w.WriteString("parte_"+bookN+"_"+s+" "+separados[1] + "\n")
+						if err != nil {
+							log.Fatal(err)
+						}
+						f.Close()
+						candado.Unlock()
+						fmt.Println("Finalizó escritura en Inform Order Centralizado")
+						break
+					}
+				}
+			}
 			/*
 			fmt.Println("parte_1_"+s+" "+strconv.FormatInt(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId,10) + "\n")
 			_, err := w.WriteString("parte_1_"+s+" "+strconv.FormatInt(ordReq.Req.(*OrderReq_OrderData).OrderData.NodeId,10) + "\n")
@@ -148,7 +197,13 @@ func (Server *Server) InformOrder(stream DataName_InformOrderServer) error {
 			  }
 			  */
 		case *OrderReq_FileName:
-			fileName = ordReq.Req.(*OrderReq_FileName).FileName
+			fmt.Println(ordReq.Req.(*OrderReq_FileName).FileName)
+			fn := ordReq.Req.(*OrderReq_FileName).FileName
+			modo_fn := strings.Split(fn, "+")
+			modo = modo_fn[0]
+			fileName = modo_fn[1]
+			fmt.Printf("El modo es %s", modo)
+			fmt.Printf("El fileName es %s", fileName)
 			fmt.Println("Receiving file of name in inform order: " + fileName)
 			_, err1 := w.WriteString(fileName + "\n")
   			if err1 != nil {
